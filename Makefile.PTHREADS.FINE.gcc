@@ -1,0 +1,37 @@
+
+# Makefile for the fine-grained pthreads version of OmegaPlus
+
+CC = gcc
+
+CFLAGS = -O3 -Wall -D_USE_PTHREADS -D_GNU_SOURCE -D_SHARED #-D_UNROLL
+
+LIBRARIES = -lm -lpthread
+
+EXECNAME = OmegaPlus-F
+
+OBJS = OmegaPlus.o OmegaPlus_input.o OmegaPlus_compression.o OmegaPlus_correlation.o OmegaPlus_omega.o
+
+all: $(EXECNAME)
+
+OmegaPlus-F : $(OBJS)
+	$(CC) $(CFLAGS) -o $(EXECNAME) $(OBJS) $(LIBRARIES)
+
+OmegaPlus.o: OmegaPlus.c 
+	$(CC) $(CFLAGS) -c OmegaPlus.c
+
+OmegaPlus_input.o: OmegaPlus_input.c 
+	$(CC) $(CFLAGS) -c OmegaPlus_input.c
+
+OmegaPlus_compression.o: OmegaPlus_compression.c 
+	$(CC) $(CFLAGS) -c OmegaPlus_compression.c
+
+OmegaPlus_correlation.o: OmegaPlus_correlation.c 
+	$(CC) $(CFLAGS) -c OmegaPlus_correlation.c
+
+OmegaPlus_omega.o: OmegaPlus_omega.c 
+	$(CC) $(CFLAGS) -c OmegaPlus_omega.c
+
+
+clean:
+	rm $(EXECNAME)
+	rm $(OBJS)
