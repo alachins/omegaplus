@@ -1023,7 +1023,7 @@ int main(int argc, char** argv)
 			//strncat(clrReportsFileName,runName,INFILENAMESIZE-strlen(clrReportsFileName));
 			strncat(omegaReportFileName,".",INFILENAMESIZE-strlen(omegaReportFileName));
 			if(fileFormat==VCF_FORMAT)
-				strncat(omegaReportFileName,VCF_alignment_name,INFILENAMESIZE-strlen(omegaReportFileName));
+				strncat(omegaReportFileName,VCF_alignment_name_cur,INFILENAMESIZE-strlen(omegaReportFileName));
 			else
 				strncat(omegaReportFileName,str,INFILENAMESIZE-strlen(omegaReportFileName));
 

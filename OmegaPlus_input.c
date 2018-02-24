@@ -2955,6 +2955,8 @@ int readAlignmentVCF(FILE *fp, alignment_struct * alignment, int imputeG, int im
 
 	printf("\t\tChromosome:\t\t%s\n\n", VCF_alignment_name);
 
+	strcpy(VCF_alignment_name_cur, VCF_alignment_name);
+
 	int inAlignment = 1, lineIndex=-1, i, j;
 
 	int sampleDataMemSize = 2;

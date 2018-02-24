@@ -109,6 +109,7 @@
 char bits_in_16bits [0x1u << 16];
 
 char VCF_alignment_name [MAX_CHROM_NAME_VCF];
+char VCF_alignment_name_cur [MAX_CHROM_NAME_VCF];
 
 int VCF_header_lines;
 int VCF_first_SNP;
