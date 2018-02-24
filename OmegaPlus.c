@@ -44,7 +44,7 @@ void printHeading (FILE * fp)
 	fprintf(fp,"\n\n                                      _______________");
 	fprintf(fp,"\n\n                                         OmegaPlus"   );
 	fprintf(fp,"\n                                      _______________");
-	fprintf(fp,"\n\n\n\n OmegaPlus version 3.0.0 released by Nikolaos Alachiotis and Pavlos Pavlidis in December 2014.\n");
+	fprintf(fp,"\n\n\n\n OmegaPlus version 3.0.1 released by Nikolaos Alachiotis and Pavlos Pavlidis in February 2017.\n");
 }
 
 void printRunInfo (FILE * fp, int argc, char ** argv, int fileFormat, int imputeN, int imputeG, int binary)
@@ -823,7 +823,8 @@ int main(int argc, char** argv)
 	    threads=0,
 	    resultType=-1,
 	    ld=-1,
-	    filterOut=0;
+	    filterOut=0,
+	    reports=0;
 
 	    borderTol=-1;
 	    int memLimit=0;
@@ -873,7 +874,8 @@ int main(int argc, char** argv)
 	
 	char inputFileName[INFILENAMESIZE],
 	     infoFileName[INFILENAMESIZE], 
-	     omegaReportFileName[INFILENAMESIZE], 
+	     omegaReportFileName[INFILENAMESIZE],
+	     omegaReportFileNameBase[INFILENAMESIZE], 
 	     warnFileName[INFILENAMESIZE], 
 	     sampleVCFfileName[INFILENAMESIZE];
 
@@ -891,7 +893,7 @@ int main(int argc, char** argv)
 	
    	commandLineParser(argc, argv, inputFileName, &grid, &alignmentLength, &minw, &maxw, recfile, 
 			  &minsnps, &imputeN, &imputeG, &binary, &seed, &fileFormat, &threads, &resultType, &ld, &borderTol, &filterOut, &noSeparation, sampleVCFfileName,
-			  &generateVCFsamplelist, &memLimit);
+			  &generateVCFsamplelist, &memLimit, &reports);
 
 	maxwUSER = maxw;
 
@@ -942,6 +944,8 @@ int main(int argc, char** argv)
 
 	strncat(omegaReportFileName,runName,INFILENAMESIZE-strlen(omegaReportFileName));
 
+	if(reports==1)
+		strcpy(omegaReportFileNameBase, omegaReportFileName);
 
 	fpIn = fopen(inputFileName,"r");
 	
@@ -950,9 +954,9 @@ int main(int argc, char** argv)
 	if (fileFormat==MS_FORMAT || fileFormat==MACS_FORMAT)
 		fpWarnings = fopen(warnFileName, "w");
 
-	fpReport = fopen(omegaReportFileName,"w");	
- 
-	
+	if(reports==0)
+		fpReport = fopen(omegaReportFileName,"w");
+
 	introMsg(argc, argv, fpInfo, fileFormat, imputeN, imputeG, binary);
 
 
@@ -978,21 +982,22 @@ int main(int argc, char** argv)
 	while(nxt_alignment==1)
 	{
 	  
-	  initializeAlignmentVariables( alignment );
-	  
-	  
-	  
-	  fprintf(stdout," Alignment %d\n",alignmentIndex);
-			
-	  fprintf(fpInfo," Alignment %d\n",alignmentIndex);
-	  
-	  if(noSeparation == 0)
-	    fprintf(fpReport,"\n//%d\n",alignmentIndex);			
-	  else
-	    fprintf(fpReport, "\n");
-	  
-	  if( readAlignment(fpIn,alignment, imputeG, imputeN, binary, fileFormat, fpInfo, filterOut) == 1)
-	    {
+		initializeAlignmentVariables( alignment );		  
+		  
+		fprintf(stdout," Alignment %d\n",alignmentIndex);
+
+		fprintf(fpInfo," Alignment %d\n",alignmentIndex);
+
+		if(fileFormat != VCF_FORMAT)
+		{
+			if(noSeparation == 0)
+				fprintf(fpReport,"\n//%d\n",alignmentIndex);			
+			else
+				fprintf(fpReport, "\n");
+		}
+
+		if( readAlignment(fpIn,alignment, imputeG, imputeN, binary, fileFormat, fpInfo, filterOut) == 1)
+		{
 
 /*#ifdef _USE_OPENMP_GENERIC
 	total_dp_init_time=malloc(sizeof(double)*threads);
@@ -1006,6 +1011,43 @@ int main(int argc, char** argv)
 	}
 #endif
 */
+
+
+		if(reports==1)
+		{
+			strcpy(omegaReportFileName, omegaReportFileNameBase);
+
+			char str[STRINGLENGTH];
+			sprintf(str, "%d", alignmentIndex);
+
+			//strncat(clrReportsFileName,runName,INFILENAMESIZE-strlen(clrReportsFileName));
+			strncat(omegaReportFileName,".",INFILENAMESIZE-strlen(omegaReportFileName));
+			if(fileFormat==VCF_FORMAT)
+				strncat(omegaReportFileName,VCF_alignment_name,INFILENAMESIZE-strlen(omegaReportFileName));
+			else
+				strncat(omegaReportFileName,str,INFILENAMESIZE-strlen(omegaReportFileName));
+
+			if(fpReport!=NULL)
+			{
+				fclose(fpReport);
+				fpReport=NULL;
+			}
+
+			fpReport = fopen(omegaReportFileName,"w");
+
+		}
+
+
+		if(fileFormat == VCF_FORMAT)
+		{
+			if(noSeparation == 0)
+				fprintf(fpReport,"\n//%d\n",alignmentIndex);			
+			else
+				fprintf(fpReport, "\n");
+		}
+
+
+
 		    compressAlignment(alignment);		
 		    
 		    if (fileFormat==MS_FORMAT || fileFormat == MACS_FORMAT)

@@ -166,6 +166,15 @@ void printVersion (FILE * fp)
 	fprintf(fp,"Faster parallel algorithm in OmegaPlus-G\n");
 	fprintf(fp,"\n\n");
 
+	fprintf(fp, "\t=====================================\n");
+
+	fprintf(fp,"\n\n");
+	fprintf(fp,"\tVersion:\t\t3.0.1\n\n");
+	fprintf(fp,"\tReleased:\t\tFebruary 2017\n\n");
+	fprintf(fp,"\tComments:\t\t");
+	fprintf(fp,"Includes \"reports\" option\n");
+	fprintf(fp,"\n\n");
+
 	
 }
 
@@ -191,9 +200,10 @@ void printHelp (FILE * fp)
 	fprintf(fp,"\t[-b maxSNPdiff]\n");
 	fprintf(fp,"\t[-no-singletons]\n");
 	fprintf(fp,"\t[-v|version]\n");
-	fprintf(fp, "\t[-noSeparator]\n");
-	fprintf(fp, "\t[-sampleList]\n");
-	fprintf(fp, "\t[-sampleList_out]\n");
+	fprintf(fp,"\t[-noSeparator]\n");
+	fprintf(fp,"\t[-sampleList]\n");
+	fprintf(fp,"\t[-sampleList_out]\n");
+	fprintf(fp,"\t[-reports]\n");
 	fprintf(fp,"\n\n");
 	
 	fprintf(fp,"\t-name <STRING>\t\tSpecifies a name for the run and the output files.\n\n");
@@ -228,6 +238,7 @@ void printHelp (FILE * fp)
 	fprintf(fp,"\t-noSeparator\t\tTo suppress printing the // flag that separates datasets. Useful for meta-processing (particularly with R).\n\n");
 	fprintf(fp,"\t-sampleList <STRING>\tTo be used with VCF files in order to specify which samples to be included in the analysis.\n\n");
 	fprintf(fp,"\t-sampleList_out <STRING>\tTo generate a list of VCF samples in the input VCF file.\n\n");
+	fprintf(fp,"\t-reports\t\tTo generate each alignment report in a separate file.\n\n");
 	fprintf(fp,"\n\n");
 }
 
@@ -345,7 +356,8 @@ void commandLineParser(int argc, char** argv,
 		       int *noSeparator,
 		       char * samplefile_i,
 		       int * generateVCFsamplelist,
-		       int *memLimit)
+		       int *memLimit,
+		       int * reports)
 {
   int i, nameSet = 0, fileSet=0, gridSet=0, lengthSet=0, minwSet=0, maxwSet=0, seedSet=0, imputeSet=0, binarySet=0, seedCheck=0;
 	char impute, model[100];
@@ -643,6 +655,13 @@ void commandLineParser(int argc, char** argv,
 
 			continue;
 		}
+
+		if(!strcmp(argv[i], "-reports"))
+		{
+			*reports = 1;
+			continue;
+		}
+
 
 
 #ifdef _USE_PTHREADS
