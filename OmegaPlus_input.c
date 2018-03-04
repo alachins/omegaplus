@@ -175,6 +175,14 @@ void printVersion (FILE * fp)
 	fprintf(fp,"Includes \"reports\" option\n");
 	fprintf(fp,"\n\n");
 
+	fprintf(fp, "\t=====================================\n");
+
+	fprintf(fp,"\n\n");
+	fprintf(fp,"\tVersion:\t\t3.0.2\n\n");
+	fprintf(fp,"\tReleased:\t\tMarch 2018\n\n");
+	fprintf(fp,"\tComments:\t\t");
+	fprintf(fp,"Includes \"maf\" option\n");
+	fprintf(fp,"\n\n");
 	
 }
 
@@ -204,6 +212,7 @@ void printHelp (FILE * fp)
 	fprintf(fp,"\t[-sampleList]\n");
 	fprintf(fp,"\t[-sampleList_out]\n");
 	fprintf(fp,"\t[-reports]\n");
+	fprintf(fp,"\t[-maf threshold]\n");
 	fprintf(fp,"\n\n");
 	
 	fprintf(fp,"\t-name <STRING>\t\tSpecifies a name for the run and the output files.\n\n");
@@ -239,6 +248,7 @@ void printHelp (FILE * fp)
 	fprintf(fp,"\t-sampleList <STRING>\tTo be used with VCF files in order to specify which samples to be included in the analysis.\n\n");
 	fprintf(fp,"\t-sampleList_out <STRING>\tTo generate a list of VCF samples in the input VCF file.\n\n");
 	fprintf(fp,"\t-reports\t\tTo generate each alignment report in a separate file.\n\n");
+	fprintf(fp,"\t-maf <FLOAT>\t\tTo exclude SNPs with minor allele frequency < threshold.\n\n");
 	fprintf(fp,"\n\n");
 }
 
@@ -357,7 +367,8 @@ void commandLineParser(int argc, char** argv,
 		       char * samplefile_i,
 		       int * generateVCFsamplelist,
 		       int *memLimit,
-		       int * reports)
+		       int * reports,
+		       double * maf)
 {
   int i, nameSet = 0, fileSet=0, gridSet=0, lengthSet=0, minwSet=0, maxwSet=0, seedSet=0, imputeSet=0, binarySet=0, seedCheck=0;
 	char impute, model[100];
@@ -661,6 +672,35 @@ void commandLineParser(int argc, char** argv,
 			*reports = 1;
 			continue;
 		}
+
+		if(!strcmp(argv[i], "-maf"))
+		{
+		    if (i != argc-1)
+			{
+				
+				if(argv[i+1][0]=='-')
+				{
+					fprintf(stderr, "\n ERROR: Value is missing after argument -maf\n\n");
+					exit(0);
+				}
+				
+				*maf = atof(argv[++i]);
+
+				if(*maf<0.0 || *maf>1.0)
+				{
+					fprintf(stderr, "\n ERROR: Invalid MAF value (valid: 0.0-1.0)\n\n");
+					exit(0);
+				}
+			} 
+			else
+			{
+				fprintf(stderr, "\n ERROR: Value is missing after argument -maf\n\n");
+				exit(0);	
+			}
+			continue;
+		}
+	
+
 
 
 
@@ -1275,7 +1315,9 @@ int mapCharToInt(char a)
 	return 7;
 }
 
-void removeNonPolymorphicSitesBIN(alignment_struct *alignment, FILE * fp, int filterOut)
+
+
+void removeNonPolymorphicSitesBIN(alignment_struct *alignment, FILE * fp, int filterOut, double maf)
 {	
 	int i,j, dif, rm;
 	int setVec[STATESALL];
@@ -1345,6 +1387,46 @@ void removeNonPolymorphicSitesBIN(alignment_struct *alignment, FILE * fp, int fi
 		}		
 	}
 
+
+	double maf_thres = maf;
+	if(maf_thres>=0.0 && maf_thres<=1.0)
+	{
+		for(j=0;j<k;j++)
+		{
+			int a1c = 0;
+			int a2c = 0;
+			int aTc = 0;
+	
+			for(i=0;i<alignment->sequences;i++)
+			{
+				a1c += mapCharToInt(alignment->seqtable[i][polpositions[j]]) == 1? 1:0;
+				a2c += mapCharToInt(alignment->seqtable[i][polpositions[j]]) == 0? 1:0;
+				aTc += mapCharToInt(alignment->seqtable[i][polpositions[j]]) != 2? 1:0;
+			}
+
+			assert(aTc<=alignment->sequences);
+			assert(a1c<aTc);
+			assert(a2c<aTc);
+
+			double a1f = ((double)a1c)/((double)aTc);
+			double a2f = ((double)a2c)/((double)aTc);
+			if(a1f<maf_thres || a2f<maf_thres)
+			{
+				polpositions[j]=-1;
+			}
+		}
+
+		int k_new = 0;
+		for(j=0;j<k;j++)
+		{
+			if(polpositions[j]!=-1)
+				polpositions[k_new++] = polpositions[j];
+		}
+		assert(k_new<=k);
+		k=k_new;
+	}
+	
+
 	if(k==alignment->segsites)
 	{
 		free(polpositions);
@@ -1382,7 +1464,7 @@ void removeNonPolymorphicSitesBIN(alignment_struct *alignment, FILE * fp, int fi
 	free(polpositions);	
 }
 
-void removeNonPolymorphicSitesDNA(alignment_struct *alignment, FILE * fp, int filterOut)
+void removeNonPolymorphicSitesDNA(alignment_struct *alignment, FILE * fp, int filterOut, double maf)
 {	
 	int i,j, dif, rm;
 	int setVec[STATESALL];
@@ -1457,6 +1539,51 @@ void removeNonPolymorphicSitesDNA(alignment_struct *alignment, FILE * fp, int fi
 		}
 	}
 
+	double maf_thres = maf;
+	if(maf_thres>=0.0 && maf_thres<=1.0)
+	{
+		for(j=0;j<k;j++)
+		{
+			int a1c = 0;
+			int a2c = 0;
+			int a3c = 0;
+			int a4c = 0;
+			int aTc = 0;
+	
+			for(i=0;i<alignment->sequences;i++)
+			{
+				a1c += mapCharToInt(alignment->seqtable[i][polpositions[j]]) == 3? 1:0;
+				a2c += mapCharToInt(alignment->seqtable[i][polpositions[j]]) == 4? 1:0;
+				a3c += mapCharToInt(alignment->seqtable[i][polpositions[j]]) == 5? 1:0;
+				a4c += mapCharToInt(alignment->seqtable[i][polpositions[j]]) == 6? 1:0;
+				aTc += mapCharToInt(alignment->seqtable[i][polpositions[j]]) != 2? 1:0;
+			}
+
+			assert(aTc<=alignment->sequences);
+			assert(a1c<aTc);
+			assert(a2c<aTc);
+			assert(a3c<aTc);
+			assert(a4c<aTc);
+
+			double a1f = ((double)a1c)/((double)aTc);
+			double a2f = ((double)a2c)/((double)aTc);
+			double a3f = ((double)a3c)/((double)aTc);
+			double a4f = ((double)a4c)/((double)aTc);
+			if(a1f<maf_thres || a2f<maf_thres || a3f<maf_thres || a4f<maf_thres)
+			{
+				polpositions[j]=-1;
+			}
+		}
+
+		int k_new = 0;
+		for(j=0;j<k;j++)
+		{
+			if(polpositions[j]!=-1)
+				polpositions[k_new++] = polpositions[j];
+		}
+		assert(k_new<=k);
+		k=k_new;
+	}
 
 	if(k==alignment->segsites)
 	{
@@ -1495,13 +1622,13 @@ void removeNonPolymorphicSitesDNA(alignment_struct *alignment, FILE * fp, int fi
 	free(polpositions);	
 }
 
-void removeNonPolymorphicSites(alignment_struct *alignment, FILE * fp, int filterOut)
+void removeNonPolymorphicSites(alignment_struct *alignment, FILE * fp, int filterOut, double maf)
 {	
 	if(alignment->states==2 || alignment->states==3)
-		removeNonPolymorphicSitesBIN(alignment,fp,filterOut);	
+		removeNonPolymorphicSitesBIN(alignment,fp,filterOut, maf);	
 
 	if(alignment->states==4 || alignment->states==5)
-		removeNonPolymorphicSitesDNA(alignment,fp,filterOut);			
+		removeNonPolymorphicSitesDNA(alignment,fp,filterOut, maf);			
 }
 
 int getDataType(int * states)
@@ -1969,7 +2096,7 @@ int skipLine (FILE * fp)
 
 
 
-int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE * fpInfo, int filterOut)
+int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE * fpInfo, int filterOut, double maf)
 {
 	int i,y, DIM=2;
 
@@ -2072,7 +2199,7 @@ int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int impu
 	  return 0;
 	}	
 
-	removeNonPolymorphicSites(alignment, fpInfo, filterOut);
+	removeNonPolymorphicSites(alignment, fpInfo, filterOut, maf);
 
 	if( alignment -> segsites < MINSNPS_THRESHOLD)
 	  {
@@ -2094,7 +2221,7 @@ void ignoreSpaces(FILE * fp, char * ent)
 		*ent = fgetc(fp);
 }
 
-int readAlignmentMACS(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE *fpInfo, int filterOut)
+int readAlignmentMACS(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE *fpInfo, int filterOut, double maf)
 {
 	int  i, j, DIM = 1, DIM2 = 2, prevDIM;
 	char ent;
@@ -2204,7 +2331,7 @@ int readAlignmentMACS(FILE *fp, alignment_struct *alignment, int imputeG, int im
 	for(i=0;i<alignment->segsites;i++)
 		alignment->positionsInd[i] = (int)(alignment->positions[i] * (float)alignment->length);
 
-	removeNonPolymorphicSites(alignment, fpInfo, filterOut);
+	removeNonPolymorphicSites(alignment, fpInfo, filterOut, maf);
 
 	if( alignment->segsites < MINSNPS_THRESHOLD)
 	  {
@@ -2943,7 +3070,7 @@ int readLine_VCF (FILE * fp, char ** string, int lineIndex, alignment_struct * a
 
 
 
-int readAlignmentVCF(FILE *fp, alignment_struct * alignment, int imputeG, int imputeN, int binary, FILE *fpInfo, int filterOut)
+int readAlignmentVCF(FILE *fp, alignment_struct * alignment, int imputeG, int imputeN, int binary, FILE *fpInfo, int filterOut, double maf)
 {
 	char ** string = (char **) malloc (sizeof(char*));
 	(*string) = (char *) malloc(sizeof(char)*STRINGLENGTH);
@@ -3045,7 +3172,7 @@ int readAlignmentVCF(FILE *fp, alignment_struct * alignment, int imputeG, int im
 		exit(0);
 	}
 
-	removeNonPolymorphicSites(alignment, fpInfo, filterOut);
+	removeNonPolymorphicSites(alignment, fpInfo, filterOut, maf);
 
 	if(alignment->segsites < MINSNPS_THRESHOLD)
 	  {
@@ -3162,7 +3289,7 @@ int readFASTASequence (FILE * fp, alignment_struct * alignment, int sequenceInde
 	return 0;
 }
 
-int readAlignmentFASTA(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE * fpInfo, int filterOut)
+int readAlignmentFASTA(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE * fpInfo, int filterOut, double maf)
 {
 	int y, DIM=2, nxt_seq = 1, i;	
 
@@ -3205,7 +3332,7 @@ int readAlignmentFASTA(FILE *fp, alignment_struct *alignment, int imputeG, int i
 		exit(0);
 	}	
 
-	removeNonPolymorphicSites(alignment,fpInfo, filterOut);
+	removeNonPolymorphicSites(alignment,fpInfo, filterOut, maf);
 
 	if( alignment -> segsites < MINSNPS_THRESHOLD)
 	  {
@@ -3221,19 +3348,19 @@ int readAlignmentFASTA(FILE *fp, alignment_struct *alignment, int imputeG, int i
 	return 1;
 }
 
-int readAlignment(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, int format, FILE * fpInfo, int filterOut)
+int readAlignment(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, int format, FILE * fpInfo, int filterOut, double maf)
 {
 	if(format==MS_FORMAT)
-		return readAlignmentMS(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut);
+		return readAlignmentMS(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf);
 
 	if(format==FASTA_FORMAT)
-		return readAlignmentFASTA(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut);
+		return readAlignmentFASTA(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf);
 		
 	if(format==MACS_FORMAT)
-		return readAlignmentMACS(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut);
+		return readAlignmentMACS(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf);
 
 	if(format==VCF_FORMAT)
-		return readAlignmentVCF(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut);		
+		return readAlignmentVCF(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf);		
 
 	return 0;
 } 

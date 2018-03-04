@@ -44,7 +44,7 @@ void printHeading (FILE * fp)
 	fprintf(fp,"\n\n                                      _______________");
 	fprintf(fp,"\n\n                                         OmegaPlus"   );
 	fprintf(fp,"\n                                      _______________");
-	fprintf(fp,"\n\n\n\n OmegaPlus version 3.0.1 released by Nikolaos Alachiotis and Pavlos Pavlidis in February 2017.\n");
+	fprintf(fp,"\n\n\n\n OmegaPlus version 3.0.2 released by Nikolaos Alachiotis and Pavlos Pavlidis in March 2018.\n");
 }
 
 void printRunInfo (FILE * fp, int argc, char ** argv, int fileFormat, int imputeN, int imputeG, int binary)
@@ -860,6 +860,7 @@ int main(int argc, char** argv)
 	    int prev_startIndex_tmp, prev_finishIndex_tmp;
 #endif
 
+	double maf = 0.0;
 	unsigned int seed = 0;
 
 	float maxomegaRealPos = -1.0;
@@ -893,7 +894,7 @@ int main(int argc, char** argv)
 	
    	commandLineParser(argc, argv, inputFileName, &grid, &alignmentLength, &minw, &maxw, recfile, 
 			  &minsnps, &imputeN, &imputeG, &binary, &seed, &fileFormat, &threads, &resultType, &ld, &borderTol, &filterOut, &noSeparation, sampleVCFfileName,
-			  &generateVCFsamplelist, &memLimit, &reports);
+			  &generateVCFsamplelist, &memLimit, &reports, &maf);
 
 	maxwUSER = maxw;
 
@@ -996,7 +997,7 @@ int main(int argc, char** argv)
 				fprintf(fpReport, "\n");
 		}
 
-		if( readAlignment(fpIn,alignment, imputeG, imputeN, binary, fileFormat, fpInfo, filterOut) == 1)
+		if( readAlignment(fpIn,alignment, imputeG, imputeN, binary, fileFormat, fpInfo, filterOut, maf) == 1)
 		{
 
 /*#ifdef _USE_OPENMP_GENERIC
