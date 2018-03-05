@@ -1569,7 +1569,7 @@ void removeNonPolymorphicSitesDNA(alignment_struct *alignment, FILE * fp, int fi
 			double a2f = ((double)a2c)/((double)aTc);
 			double a3f = ((double)a3c)/((double)aTc);
 			double a4f = ((double)a4c)/((double)aTc);
-			if(a1f<maf_thres || a2f<maf_thres || a3f<maf_thres || a4f<maf_thres)
+			if((a1c!=0 && a1f<maf_thres) || (a2c!=0 && a2f<maf_thres) || (a3c!=0 && a3f<maf_thres) || (a4c!=0 && a4f<maf_thres))
 			{
 				polpositions[j]=-1;
 			}
