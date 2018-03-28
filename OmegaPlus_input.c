@@ -183,6 +183,15 @@ void printVersion (FILE * fp)
 	fprintf(fp,"\tComments:\t\t");
 	fprintf(fp,"Includes \"maf\" option\n");
 	fprintf(fp,"\n\n");
+
+	fprintf(fp, "\t=====================================\n");
+
+	fprintf(fp,"\n\n");
+	fprintf(fp,"\tVersion:\t\t3.0.3\n\n");
+	fprintf(fp,"\tReleased:\t\tApril 2018\n\n");
+	fprintf(fp,"\tComments:\t\t");
+	fprintf(fp,"Includes \"mbs\" option\n");
+	fprintf(fp,"\n\n");
 	
 }
 
@@ -213,6 +222,7 @@ void printHelp (FILE * fp)
 	fprintf(fp,"\t[-sampleList_out]\n");
 	fprintf(fp,"\t[-reports]\n");
 	fprintf(fp,"\t[-maf threshold]\n");
+	fprintf(fp,"\t[-mbs]\n");
 	fprintf(fp,"\n\n");
 	
 	fprintf(fp,"\t-name <STRING>\t\tSpecifies a name for the run and the output files.\n\n");
@@ -249,6 +259,7 @@ void printHelp (FILE * fp)
 	fprintf(fp,"\t-sampleList_out <STRING>\tTo generate a list of VCF samples in the input VCF file.\n\n");
 	fprintf(fp,"\t-reports\t\tTo generate each alignment report in a separate file.\n\n");
 	fprintf(fp,"\t-maf <FLOAT>\t\tTo exclude SNPs with minor allele frequency < threshold.\n\n");
+	fprintf(fp,"\t-mbs\t\t\tTo specify that the input file is in mbs format (will be processed as if it was ms).\n\n");
 	fprintf(fp,"\n\n");
 }
 
@@ -368,7 +379,8 @@ void commandLineParser(int argc, char** argv,
 		       int * generateVCFsamplelist,
 		       int *memLimit,
 		       int * reports,
-		       double * maf)
+		       double * maf,
+		       int * fileFormatMBS)
 {
   int i, nameSet = 0, fileSet=0, gridSet=0, lengthSet=0, minwSet=0, maxwSet=0, seedSet=0, imputeSet=0, binarySet=0, seedCheck=0;
 	char impute, model[100];
@@ -700,7 +712,11 @@ void commandLineParser(int argc, char** argv,
 			continue;
 		}
 	
-
+		if(!strcmp(argv[i], "-mbs"))
+		{
+			*fileFormatMBS = 1;
+			continue;
+		}
 
 
 
@@ -2096,7 +2112,7 @@ int skipLine (FILE * fp)
 
 
 
-int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE * fpInfo, int filterOut, double maf)
+int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, FILE * fpInfo, int filterOut, double maf, int fileFormatMBS)
 {
 	int i,y, DIM=2;
 
@@ -2109,6 +2125,8 @@ int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int impu
 	  
 	int temp = fscanf(fp,"%s %d", stringtemp, &alignment->segsites);
 	temp = temp;
+
+	alignment->segsites = fileFormatMBS==1? alignment->segsites-1:alignment->segsites;
 
 	if(strcmp(stringtemp, "segsites:") != 0 )
 	  {
@@ -2128,8 +2146,10 @@ int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int impu
 	  }
 
 	alignment->positions = malloc(sizeof(float)*alignment->segsites);
+	assert(alignment->positions!=NULL);
 
 	alignment->positionsInd = malloc(sizeof(int)*alignment->segsites);
+	assert(alignment->positionsInd!=NULL);
 
 	if( alignment->segsites > 0)
 	  {
@@ -2146,10 +2166,21 @@ int readAlignmentMS(FILE *fp, alignment_struct *alignment, int imputeG, int impu
 	for(i=0;i<alignment->segsites;i++)
 		temp = fscanf(fp,"%f",&alignment->positions[i]);		
 
-	for(i=0;i<alignment->segsites;i++)
-		alignment->positionsInd[i] = (int)(alignment->positions[i] * (float)alignment->length);
-	
+	if(fileFormatMBS==1)
+	{
+		for(i=0;i<alignment->segsites;i++)
+		{
+			alignment->positionsInd[i] = (int)(alignment->positions[i]);
+			printf("%d\t", alignment->positionsInd[i]);
+		}
+	}
+	else
+	{
+		for(i=0;i<alignment->segsites;i++)
+			alignment->positionsInd[i] = (int)(alignment->positions[i] * (float)alignment->length);		
+	}
 	alignment->seqtable = malloc(sizeof(char*)*DIM);
+	assert(alignment->seqtable!=NULL);
 
 	if(alignment -> segsites == 0 )
 	  skipToNextAlignmentDelimiter(fp, '/');
@@ -3348,10 +3379,10 @@ int readAlignmentFASTA(FILE *fp, alignment_struct *alignment, int imputeG, int i
 	return 1;
 }
 
-int readAlignment(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, int format, FILE * fpInfo, int filterOut, double maf)
+int readAlignment(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, int format, FILE * fpInfo, int filterOut, double maf, int fileFormatMBS)
 {
 	if(format==MS_FORMAT)
-		return readAlignmentMS(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf);
+		return readAlignmentMS(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf, fileFormatMBS);
 
 	if(format==FASTA_FORMAT)
 		return readAlignmentFASTA(fp, alignment, imputeG, imputeN, binary, fpInfo, filterOut, maf);

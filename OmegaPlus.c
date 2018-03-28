@@ -44,10 +44,10 @@ void printHeading (FILE * fp)
 	fprintf(fp,"\n\n                                      _______________");
 	fprintf(fp,"\n\n                                         OmegaPlus"   );
 	fprintf(fp,"\n                                      _______________");
-	fprintf(fp,"\n\n\n\n OmegaPlus version 3.0.2 released by Nikolaos Alachiotis and Pavlos Pavlidis in March 2018.\n");
+	fprintf(fp,"\n\n\n\n OmegaPlus version 3.0.3 released by Nikolaos Alachiotis and Pavlos Pavlidis in April 2018.\n");
 }
 
-void printRunInfo (FILE * fp, int argc, char ** argv, int fileFormat, int imputeN, int imputeG, int binary)
+void printRunInfo (FILE * fp, int argc, char ** argv, int fileFormat, int imputeN, int imputeG, int binary, int fileFormatMBS)
 {
 	fprintf(fp,"\n\n Command:\n\n\t");
 
@@ -58,7 +58,8 @@ void printRunInfo (FILE * fp, int argc, char ** argv, int fileFormat, int impute
 	
 	fprintf(fp,"\n\n\n");
 
-	fprintf(fp, "\n Input file format (0:ms, 1:fasta, 2:macs, 3:vcf, 4:sf):\t%d\n", fileFormat);
+	int fileFormatPrint = (fileFormat==0&&fileFormatMBS==1)==1?5:fileFormat;
+	fprintf(fp, "\n Input file format (0:ms, 1:fasta, 2:macs, 3:vcf, 4:sf, 5:mbs):\t%d\n", fileFormatPrint);
 
 	int imputeBoth = imputeN + imputeG;
 
@@ -91,15 +92,15 @@ void printRunInfo (FILE * fp, int argc, char ** argv, int fileFormat, int impute
 		fprintf(fp,"\n\n");	
 }
 
-void introMsg(int argc, char ** argv, FILE * fpInfo, int fileFormat, int imputeN, int imputeG, int binary)
+void introMsg(int argc, char ** argv, FILE * fpInfo, int fileFormat, int imputeN, int imputeG, int binary, int fileFormatMBS)
 {
 	printHeading (stdout);
 
-	printRunInfo (stdout, argc, argv, fileFormat, imputeN, imputeG, binary);
+	printRunInfo (stdout, argc, argv, fileFormat, imputeN, imputeG, binary, fileFormatMBS);
 	
 	printHeading (fpInfo);
 
-	printRunInfo (fpInfo, argc, argv, fileFormat, imputeN, imputeG, binary);
+	printRunInfo (fpInfo, argc, argv, fileFormat, imputeN, imputeG, binary, fileFormatMBS);
 }
 
 #ifdef _USE_PTHREADS
@@ -861,6 +862,7 @@ int main(int argc, char** argv)
 #endif
 
 	double maf = 0.0;
+	int fileFormatMBS=0;
 	unsigned int seed = 0;
 
 	float maxomegaRealPos = -1.0;
@@ -894,7 +896,7 @@ int main(int argc, char** argv)
 	
    	commandLineParser(argc, argv, inputFileName, &grid, &alignmentLength, &minw, &maxw, recfile, 
 			  &minsnps, &imputeN, &imputeG, &binary, &seed, &fileFormat, &threads, &resultType, &ld, &borderTol, &filterOut, &noSeparation, sampleVCFfileName,
-			  &generateVCFsamplelist, &memLimit, &reports, &maf);
+			  &generateVCFsamplelist, &memLimit, &reports, &maf, &fileFormatMBS);
 
 	maxwUSER = maxw;
 
@@ -958,7 +960,7 @@ int main(int argc, char** argv)
 	if(reports==0)
 		fpReport = fopen(omegaReportFileName,"w");
 
-	introMsg(argc, argv, fpInfo, fileFormat, imputeN, imputeG, binary);
+	introMsg(argc, argv, fpInfo, fileFormat, imputeN, imputeG, binary, fileFormatMBS);
 
 
 	alignment = (alignment_struct *)malloc(sizeof(alignment_struct));
@@ -997,7 +999,7 @@ int main(int argc, char** argv)
 				fprintf(fpReport, "\n");
 		}
 
-		if( readAlignment(fpIn,alignment, imputeG, imputeN, binary, fileFormat, fpInfo, filterOut, maf) == 1)
+		if( readAlignment(fpIn,alignment, imputeG, imputeN, binary, fileFormat, fpInfo, filterOut, maf, fileFormatMBS) == 1)
 		{
 
 /*#ifdef _USE_OPENMP_GENERIC

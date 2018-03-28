@@ -283,11 +283,11 @@ void computeCorrelationMatrixPairwise(alignment_struct * alignment, omega_struct
 void applyCorrelationMatrixAdditions (omega_struct * omega, int omegaIndex, int firstRowIndex, cor_t ** correlationMatrix);
 void overlapCorrelationMatrixAdditions (alignment_struct * alignment, omega_struct * omega, int lvw_i, int cvw_i, int * firstRowToCopy, int * firstRowToCompute, int * firstRowToAdd);
 void shiftCorrelationMatrixValues (omega_struct * omega, int lvw_i, int cvw_i, int firstRowToCopy, cor_t ** correlationMatrix);
-void commandLineParser(int argc, char** argv, char* infile, int* grid, int* length, int* minw, int* maxw, char** recfile, int* minsnps, int * imputeN, int * imputeG, int * binary, unsigned int * seed, int * fileFormat, int * threads,int * results,int * ld,int *borderTol, int *filterOut, int* noSeparator, char * samplefile_i, int * generateVCFsamplelist, int * memLimit, int * reports, double * maf);
+void commandLineParser(int argc, char** argv, char* infile, int* grid, int* length, int* minw, int* maxw, char** recfile, int* minsnps, int * imputeN, int * imputeG, int * binary, unsigned int * seed, int * fileFormat, int * threads,int * results,int * ld,int *borderTol, int *filterOut, int* noSeparator, char * samplefile_i, int * generateVCFsamplelist, int * memLimit, int * reports, double * maf, int * fileFormatMBS);
 int findFirstAlignment(alignment_struct *alignment, FILE *fp, FILE *fpInfo,int format, FILE *fpVCFsamples, int generateVCFsamplelist, char * vcf_samples_filename);
 int findNextAlignment(FILE *fp, int fileFormat);
 void freeAlignment(alignment_struct *alignment, int matrixSizeMax);
-int readAlignment(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, int format, FILE * fpInfo, int filterOut, double maf);
+int readAlignment(FILE *fp, alignment_struct *alignment, int imputeG, int imputeN, int binary, int format, FILE * fpInfo, int filterOut, double maf, int readAlignment);
 void compressAlignment(alignment_struct *alignment);
 #ifdef _USE_PTHREADS
 void startThreadOperations(threadData_t * threadData, int operation);
