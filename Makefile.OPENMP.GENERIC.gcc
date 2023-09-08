@@ -3,7 +3,7 @@
 
 CC = gcc
 
-CFLAGS = -O3 -Wall -D_SHARED -D_USE_OPENMP_GENERIC -g -fopenmp -std=c99 #-D_UNROLL
+CFLAGS = -fcommon -O3 -Wall -D_SHARED -D_USE_OPENMP_GENERIC -g -fopenmp -std=c99 #-D_UNROLL
 
 LIBRARIES = -lm  
 
