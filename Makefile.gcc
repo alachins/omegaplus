@@ -3,7 +3,7 @@
 
 CC = gcc
 
-CFLAGS = -O3 -Wall -D_SHARED #-D_UNROLL
+CFLAGS = -fcommon -O3 -Wall -D_SHARED #-D_UNROLL
 
 LIBRARIES = -lm
 
